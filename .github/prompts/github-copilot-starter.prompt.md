@@ -138,6 +138,30 @@ Create Coding Agent workflow file:
 
 - `copilot-setup-steps.yml` - GitHub Actions workflow for Coding Agent environment setup
 
+Additionally, consider (create only if missing and justified by stack):
+- `quality-gates.yml` – unified lint, type-check, unit test, dependency audit (keep modular jobs). Job names: `lint`, `typecheck`, `test`, `dep-scan`.
+- `playwright-e2e.yml` – isolated E2E (trigger on `pull_request` touching `app/components/**` or `server/api/**`). Use matrix for browsers if configured; skip if Playwright not installed.
+- `codeql-analysis.yml` – security scanning (only if language supported; for TypeScript/JavaScript include basic initialization). Keep permissions minimal.
+- `conventional-commit-check.yml` – optional, validates commit messages or PR title for semantic versioning signals.
+
+Add workflows incrementally; do not introduce failing gates without remediation plan.
+
+### 6. Editor and Formatting Configs (JS/TS only)
+
+Create these only when the repository is a JavaScript/TypeScript project. Detect by the presence of any of: `package.json` with `dependencies`/`devDependencies` for JS/TS tooling, `tsconfig.json`, or `*.{ts,tsx,js,jsx}` files. If uncertain, prompt the user.
+
+Respect existing files. If a config already exists, update it rather than creating a duplicate:
+
+- `.editorconfig` – Base editor settings (UTF-8, LF, final newline, trim trailing whitespace; indent 2 spaces). Special cases: keep tabs for `Makefile`, don’t trim trailing whitespace in Markdown.
+- Prettier config – `.prettierrc` (JSON) or `prettier.config.*` with minimal, non-controversial defaults compatible with Vue/Nuxt (e.g., print width 100, single quotes, trailing comma all, bracket spacing true). Add `.prettierignore` for common build and lock files.
+- ESLint config – Prefer updating an existing `eslint.config.*` file (flat config) to integrate Prettier compatibility rather than creating `.eslintrc.*`. If no ESLint config exists, create `eslint.config.mjs` for ESM projects; fall back to `.js` only for CommonJS. Avoid duplicate ESLint configs.
+
+Compatibility requirements (must adhere to avoid clashes):
+- Ensure ESLint formatting rules don’t fight Prettier. If the project uses `eslint-plugin-format` (or `eslint-plugin-prettier`), enable it once and disable overlapping stylistic rules or extend `eslint-config-prettier`.
+- Use Prettier for formatting and ESLint for code-quality rules; do not enable competing style rules.
+- Align indent size and line endings across `.editorconfig`, Prettier, and ESLint.
+- For Vue/Nuxt, ensure the ESLint config includes appropriate Vue parser/plugins and doesn’t reformat what Prettier handles.
+
 **CRITICAL**: The workflow MUST follow this exact structure:
 
 - Job name MUST be `copilot-setup-steps`
@@ -276,6 +300,10 @@ project-root/
 │   │   └── debugger.chatmode.md
 │   └── workflows/
 │       └── copilot-setup-steps.yml
+│       └── quality-gates.yml            # Lint, type, test, dep scan
+│       └── playwright-e2e.yml           # E2E tests (if Playwright present)
+│       └── codeql-analysis.yml          # SAST security scanning
+│       └── conventional-commit-check.yml# Optional commit message gate
 ```
 
 ## YAML Frontmatter Template
@@ -365,8 +393,10 @@ The plan consists of a Markdown document that describes the implementation plan,
 6. **Generate reusable prompts for common development tasks** (skip duplicates, complement existing prompts)
 7. **Set up specialized chat modes for different development scenarios** (skip duplicates, complement existing modes)
 8. **Create the GitHub Actions workflow for Coding Agent** (`copilot-setup-steps.yml`)
+8a. **Assess need for additional quality workflows** (lint/test/audit, e2e, security). Only scaffold those missing and relevant.
 9. **Validate all files follow proper formatting and include necessary frontmatter**
 10. **Report on preserved existing files and newly created files**
+11. **If requested, generate baseline PR template, issue templates, CODEOWNERS, and pre-commit hook configuration**
 
 ## Post-Setup Instructions
 
@@ -379,6 +409,7 @@ After creating all files, provide the user with:
 5. **Integration guidance** - How new files work with existing configuration
 6. **Customization tips** - How to modify files for their specific needs
 7. **Testing recommendations** - How to verify the setup works correctly
+8. **Governance artifacts** - Explain CODEOWNERS, PR templates, issue templates, commit standards
 
 ## Preservation Strategy
 
@@ -425,6 +456,12 @@ Before completing, verify:
 - [ ] Documentation standards are clear
 - [ ] Code review standards are defined
 - [ ] **Preservation report includes all existing files**
+- [ ] PR template added or confirmed (no duplication)
+- [ ] CODEOWNERS present or rationale for omission documented
+- [ ] Issue templates (bug, feature) added if team size > solo
+- [ ] Pre-commit hooks configured or instructions provided
+- [ ] Security scanning workflow evaluated (CodeQL or alternative)
+- [ ] E2E workflow only if Playwright dependency exists
 
 ## Workflow Template Structure
 
@@ -515,3 +552,29 @@ jobs:
 - ✅ Simple linting (if standard)
 - ✅ Basic test running
 - ✅ Standard build commands
+
+### Additional Workflow Guidance
+
+Keep separate workflows narrowly scoped:
+- `quality-gates.yml`: parallel jobs; each may use `needs` for aggregate status. Fail fast policy except tests may run fully (`fail-fast: false`). Cache dependencies (e.g., npm). Pin action versions.
+- `playwright-e2e.yml`: gate heavy browser installs; run only when relevant paths change using `paths` filters. Use `timeout-minutes` to avoid hanging runs.
+- `codeql-analysis.yml`: enable weekly schedule plus `push` & `pull_request` to `main`/security branches.
+- `conventional-commit-check.yml`: lightweight Node step parsing `github.event.pull_request.title`.
+
+### PR Template Expectations
+Single `PULL_REQUEST_TEMPLATE.md` with concise checklists (security, performance, tests, docs). Keep under ~120 lines.
+
+### Issue Templates
+`ISSUE_TEMPLATE/bug_report.md` and `ISSUE_TEMPLATE/feature_request.md` – structured fields (steps to reproduce, expected, acceptance criteria).
+
+### CODEOWNERS Strategy
+Assign critical areas (e.g., `server/api/` to backend reviewer, `app/components/Charts/` to data viz owner). Keep patterns minimal.
+
+### Pre-Commit Hooks
+Recommend simple tool (e.g., `simple-git-hooks` or `husky`). Minimal hooks:
+- `lint-staged` for staged `.ts,.vue` (eslint --max-warnings=0)
+- Optional `typecheck` via `tsc -p tsconfig.json --noEmit` (only for larger changes; may move to pre-push).
+Document how to bypass (`git commit --no-verify`) sparingly.
+
+### Enforcement Philosophy
+Introduce guardrails gradually; start non-blocking (annotations) then escalate to blocking once stable.
