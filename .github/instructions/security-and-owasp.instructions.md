@@ -1,6 +1,27 @@
----
-applyTo: '**/*.{ts,js,vue,py,java,cs,go,rb,php,tsx,jsx}'
+# Endpoint Input Validation (Copilot Consumption)
+
+Always validate all endpoint parameters and request body values using a schema validator such as Zod. This applies to every API route, handler, or controller. Validation must occur before any business logic is executed.
+
+Copilot Implementation Guidance:
+
+- Use Zod (or equivalent) to define schemas for expected input.
+- Parse and validate incoming data with the schema.
+- Reject requests with invalid data and return a clear error response.
+- Example (TypeScript/Nuxt 3):
+  ```ts
+  import { z } from 'zod';
+  const schema = z.object({ id: z.string(), value: z.number() });
+  const body = await readBody(event);
+  const result = schema.safeParse(body);
+  if (!result.success) return { error: 'Invalid input' };
+  // ...business logic...
+  ```
+
+## This requirement is mandatory for all new and updated endpoints. Copilot must always check for and implement input validation as described.
+
+applyTo: '\*_/_.{ts,js,vue,py,java,cs,go,rb,php,tsx,jsx}'
 description: 'Comprehensive secure coding instructions for all languages and frameworks, based on OWASP Top 10 and industry best practices.'
+
 ---
 
 # Secure Coding and OWASP Guidelines
