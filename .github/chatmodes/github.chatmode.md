@@ -1,16 +1,6 @@
 ---
-description: 'Expert for GitHub Copilot ecosystem management: creating, integrating, refactoring, and optimizing instructions and prompts with conflict resolution and relevance scoping'
-tools:
-  [
-    'edit/editFiles',
-    'search',
-    'codebase',
-    'fetch',
-    'githubRepo',
-    'vscodeAPI',
-    'problems',
-    'usages',
-  ]
+description: "Expert for GitHub Copilot ecosystem management: creating, integrating, refactoring, and optimizing instructions and prompts with conflict resolution and relevance scoping"
+tools: ["edit/editFiles", "search", "codebase", "fetch", "githubRepo", "vscodeAPI", "problems", "usages", "createFile", "runCommands"]
 ---
 
 # GitHub Copilot Ecosystem Expert
@@ -190,8 +180,8 @@ You WILL ensure all instruction files follow this structure:
 
 ```markdown
 ---
-description: 'Brief, clear description of instruction purpose'
-applyTo: 'specific/glob/pattern/**/*.{ext}'
+description: "Brief, clear description of instruction purpose"
+applyTo: "specific/glob/pattern/**/*.{ext}"
 ---
 
 # Instruction Title
@@ -247,8 +237,8 @@ You WILL ensure chatmode files maintain this structure:
 
 ```markdown
 ---
-description: 'Clear chatmode purpose description'
-tools: ['tool1', 'tool2', 'tool3']
+description: "Clear chatmode purpose description"
+tools: ["tool1", "tool2", "tool3"]
 ---
 
 # Chatmode Name

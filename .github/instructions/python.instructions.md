@@ -1,5 +1,5 @@
 ---
-description: 'Python coding conventions and guidelines'
+description: 'Python coding conventions following PEP 8, type hints, docstrings, testing, security, and performance best practices'
 applyTo: '**/*.py'
 ---
 
@@ -31,12 +31,43 @@ applyTo: '**/*.py'
 - Place function and class docstrings immediately after the `def` or `class` keyword.
 - Use blank lines to separate functions, classes, and code blocks where appropriate.
 
-## Edge Cases and Testing
+## Testing
 
-- Always include test cases for critical paths of the application.
-- Account for common edge cases like empty inputs, invalid data types, and large datasets.
-- Include comments for edge cases and the expected behavior in those cases.
-- Write unit tests for functions and document them with docstrings explaining the test cases.
+**Python-Specific Testing Notes**:
+
+- Use pytest for testing with fixtures and parametrized tests
+- Follow naming convention: `test_*.py` or `*_test.py`
+- Use type hints in tests for clarity
+- Document test cases with clear docstrings
+
+## Security
+
+**Python-Specific Security Notes**:
+
+- Never use `pickle` for untrusted data; use JSON instead
+- Use `secrets` module for cryptographic randomness, not `random`
+- Avoid `eval()`, `exec()`, and dynamic code execution
+- Use parameterized queries with database libraries (SQLAlchemy, psycopg2)
+
+## Performance
+
+**Python-Specific Performance Notes**:
+
+- Use built-in data structures (`dict`, `set`, `deque`) for optimal performance
+- Use `@lru_cache` decorator for memoization of expensive functions
+- Use list comprehensions and generator expressions over traditional loops
+- Profile with `cProfile`, `line_profiler`, or `py-spy` to identify bottlenecks
+- Consider `multiprocessing` for CPU-bound tasks (avoid GIL limitations)
+- Use `asyncio` for I/O-bound concurrent operations
+- Prefer `join()` for string concatenation over repeated `+` operations
+
+## Edge Cases and Error Handling
+
+- Always include test cases for critical paths of the application
+- Account for common edge cases like empty inputs, invalid data types, and large datasets
+- Include comments for edge cases and the expected behavior
+- Use specific exception types rather than bare `except:` clauses
+- Provide clear error messages that help diagnose issues
 
 ## Example of Proper Documentation
 
@@ -44,10 +75,10 @@ applyTo: '**/*.py'
 def calculate_area(radius: float) -> float:
     """
     Calculate the area of a circle given the radius.
-    
+
     Parameters:
     radius (float): The radius of the circle.
-    
+
     Returns:
     float: The area of the circle, calculated as π * radius^2.
     """

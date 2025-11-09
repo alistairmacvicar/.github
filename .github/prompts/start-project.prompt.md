@@ -64,20 +64,20 @@ Users may have existing files with different names that serve the same purpose. 
 
 **Instructions Mapping:**
 
-- `typescript-5-es2022.instructions.md` → serves as `typescript.instructions.md` or `javascript.instructions.md`
+- `typescript.instructions.md` → serves as `typescript.instructions.md` or `javascript.instructions.md`
 - `security-and-owasp.instructions.md` → serves as `security.instructions.md`
 - `performance-optimization.instructions.md` → serves as `performance.instructions.md`
 - `playwright-typescript.instructions.md` → serves as `testing.instructions.md` (for Playwright-based projects)
-- `self-explanatory-code-commenting.instructions.md` → part of code style/documentation guidelines
+- `commenting.instructions.md` → part of code style/documentation guidelines
 - `taming-copilot.instructions.md` → Copilot behavior control guidelines
 
 **Prompts Mapping:**
 
-- `playwright-generate-test.prompt.md` → serves as `write-tests.prompt.md` (for Playwright)
-- `create-github-issues-feature-from-implementation-plan.prompt.md` → project management prompts
-- `documentation-writer.prompt.md` → serves as `generate-docs.prompt.md`
-- `readme-blueprint-generator.prompt.md` → README-specific documentation
-- `technology-stack-blueprint-generator.prompt.md` → tech stack documentation
+- `issue-creation.prompt.md` → project management prompts
+- `write-docs.prompt.md` → serves as `generate-docs.prompt.md`
+- `readme-creation.prompt.md` → README-specific documentation
+- `tech-stack-creation.prompt.md` → tech stack documentation
+- `architecture-creation.prompt.md` → architecture documentation
 
 **Chat Modes Mapping:**
 
@@ -85,6 +85,7 @@ Users may have existing files with different names that serve the same purpose. 
 - `task-planner.chatmode.md` → serves as `architect.chatmode.md` or planning mode
 - `task-researcher.chatmode.md` → research and analysis mode
 - `seo.chatmode.md` → SEO-specific optimization mode
+- `github.chatmode.md` → Copilot ecosystem mode
 
 Ask the user for the following information if not provided:
 
