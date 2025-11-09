@@ -3,8 +3,6 @@ description: 'Guidelines for TypeScript Development targeting TypeScript 5.x and
 applyTo: '**/*.ts'
 ---
 
-<!-- Related Instructions: #file:security-and-owasp.instructions.md | #file:testing.instructions.md | #file:playwright-typescript.instructions.md | #file:performance-optimization.instructions.md -->
-
 # TypeScript Development
 
 > These instructions assume projects are built with TypeScript 5.x (or newer) compiling to an ES2022 JavaScript baseline. Adjust guidance if your runtime requires older language targets or down-level transpilation.
