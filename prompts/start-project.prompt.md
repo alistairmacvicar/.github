@@ -1,24 +1,62 @@
 ---
 mode: 'agent'
 model: Claude Sonnet 4
-tools:
-  [
-    'edit',
-    'githubRepo',
-    'changes',
-    'problems',
-    'search',
-    'runCommands',
-    'fetch',
-  ]
 description: 'Set up complete GitHub Copilot configuration for a new project based on technology stack'
 ---
 
 You are a GitHub Copilot setup specialist. Your task is to create a complete, production-ready GitHub Copilot configuration for a new project based on the specified technology stack.
 
+## Critical Rule: Check Before Creating
+
+**MANDATORY FIRST STEP**: Before creating ANY file, check if an equivalent already exists.
+
+### File Existence Check Strategy
+
+1. **List all existing `.github` directory contents** using file search
+2. **Identify each file type**: instructions, prompts, chatmodes, workflows, templates, governance
+3. **Map existing files** to their functional equivalents (see mapping guide below)
+4. **Determine gaps** - identify only what's truly missing
+5. **Create ONLY missing files** - never duplicate or replace existing files
+
+### When to Skip File Creation
+
+- **SKIP** if an equivalent file exists (use mapping guide)
+- **SKIP** if existing file covers the same purpose
+- **SKIP** if not relevant to the technology stack
+- **SKIP** if team size doesn't warrant it (e.g., CODEOWNERS for solo projects)
+
+### When to Create Files
+
+- **CREATE** only if no equivalent exists AND it's relevant to the stack
+- **CREATE** only if it complements (not duplicates) existing files
+- **CREATE** only if it adds genuine value
+
 ## Project Information Required
 
 **MANDATORY FIRST STEP**: Check for existing `.github` files and preserve them.
+
+## Language & Framework Detection Heuristics (Use Before Creating Language-Specific Assets)
+
+Run lightweight detection instead of assumptions; only create language/framework-specific files when a heuristic matches. If multiple stacks are detected, ask the user which to prioritize.
+
+| Target              | Detection Signals (ANY unless noted)                                                                                               | Created Assets Scope                                                      |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| TypeScript / JS     | `package.json` present; `tsconfig.json`; files `**/*.ts,**/*.tsx,**/*.js,**/*.jsx`; dependencies like `typescript`, `vue`, `react` | TS/JS instructions, ESLint, Prettier, Node workflows                      |
+| Vue                 | `dependencies` include `vue`, `@nuxt/*`; presence of `nuxt.config.*`; `.vue` files                                                 | Vue-specific instructions (if not already covered), Playwright E2E gating |
+| React               | `react` dependency; `.jsx`/`.tsx` components; `vite.config.*` or `next.config.*`                                                   | React instructions (only if not redundant with TS)                        |
+| Python              | `requirements.txt` or `pyproject.toml`; `.py` files root-level; absence of Node-only signals                                       | Python instructions + Python workflow only                                |
+| Java                | `pom.xml` or `build.gradle`; `.java` files; `mvnw`/`gradlew` scripts                                                               | Java instructions + Maven/Gradle workflow                                 |
+| Mixed (JS + Python) | Both TS/JS signals and Python signals                                                                                              | Ask user; do NOT create both full workflow sets — pick primary            |
+
+Avoid generating sample blocks for languages not detected. For ambiguous cases (e.g., minimal repo with just `README.md`), prompt the user instead of guessing.
+
+### Workflow Language Gating
+
+Only include the snippet under **Workflow Template Structure** for the detected primary language. Do not emit all three (Node, Python, Java) simultaneously unless user explicitly requests multi-language CI.
+
+### Testing Stack Gating
+
+Playwright E2E workflow only if `@playwright/test` is present (dependency) OR user confirms intent. Python-based Playwright must be explicitly requested (not auto-generated from JS heuristics).
 
 ### Existing File Recognition
 
@@ -82,12 +120,13 @@ Main repository instructions that apply to all Copilot interactions.
 - `playwright-typescript.instructions.md` - Testing with Playwright
 - `github-actions-ci-cd-best-practices.instructions.md` - CI/CD workflows
 
-**Create only if missing:**
+  **Create only if missing:**
 
 - `${primaryLanguage}.instructions.md` - Language-specific guidelines (only if different from existing)
 - `testing.instructions.md` - Testing standards (if Playwright instructions don't cover needs)
 - `documentation.instructions.md` - Documentation requirements
 - `code-review.instructions.md` - Code review standards
+- `observability-sentry.instructions.md` - Observability/Sentry guidelines (tool-agnostic, no code). Only create if the detected primary language is supported by an official Sentry SDK (e.g., JavaScript/TypeScript, Python, Java, .NET, Go, Ruby, PHP). If uncertain, prompt the user for confirmation.
 
 ### 3. `.github/prompts/` Directory
 
@@ -134,15 +173,18 @@ Main repository instructions that apply to all Copilot interactions.
 
 ### 5. `.github/workflows/` Directory
 
-Create Coding Agent workflow file:
+**Check for existing workflows first**: List all `.yml` and `.yaml` files in `.github/workflows/` before creating any new ones.
+
+Create Coding Agent workflow file (only if missing):
 
 - `copilot-setup-steps.yml` - GitHub Actions workflow for Coding Agent environment setup
 
-Additionally, consider (create only if missing and justified by stack):
-- `quality-gates.yml` – unified lint, type-check, unit test, dependency audit (keep modular jobs). Job names: `lint`, `typecheck`, `test`, `dep-scan`.
-- `playwright-e2e.yml` – isolated E2E (trigger on `pull_request` touching `app/components/**` or `server/api/**`). Use matrix for browsers if configured; skip if Playwright not installed.
-- `codeql-analysis.yml` – security scanning (only if language supported; for TypeScript/JavaScript include basic initialization). Keep permissions minimal.
-- `conventional-commit-check.yml` – optional, validates commit messages or PR title for semantic versioning signals.
+Additionally, consider (create ONLY if missing, justified by stack, and no equivalent exists):
+
+- `quality-gates.yml` – unified lint, type-check, unit test, dependency audit (keep modular jobs). Job names: `lint`, `typecheck`, `test`, `dep-scan`. Skip if equivalents like `ci.yml`, `test.yml`, or `lint.yml` exist.
+- `playwright-e2e.yml` – isolated E2E (trigger on `pull_request` touching relevant paths). Use matrix for browsers if configured; skip if Playwright not installed or if `e2e.yml`, `test-e2e.yml` exist.
+- `codeql-analysis.yml` – security scanning (only if language supported; for TypeScript/JavaScript include basic initialization). Keep permissions minimal. Skip if `security.yml`, `codeql.yml`, or `snyk.yml` exist.
+- `conventional-commit-check.yml` – optional, validates commit messages or PR title for semantic versioning signals. Skip if `commit-lint.yml` or similar exists.
 
 Add workflows incrementally; do not introduce failing gates without remediation plan.
 
@@ -157,6 +199,7 @@ Respect existing files. If a config already exists, update it rather than creati
 - ESLint config – Prefer updating an existing `eslint.config.*` file (flat config) to integrate Prettier compatibility rather than creating `.eslintrc.*`. If no ESLint config exists, create `eslint.config.mjs` for ESM projects; fall back to `.js` only for CommonJS. Avoid duplicate ESLint configs.
 
 Compatibility requirements (must adhere to avoid clashes):
+
 - Ensure ESLint formatting rules don’t fight Prettier. If the project uses `eslint-plugin-format` (or `eslint-plugin-prettier`), enable it once and disable overlapping stylistic rules or extend `eslint-config-prettier`.
 - Use Prettier for formatting and ESLint for code-quality rules; do not enable competing style rules.
 - Align indent size and line endings across `.editorconfig`, Prettier, and ESLint.
@@ -385,18 +428,21 @@ The plan consists of a Markdown document that describes the implementation plan,
 
 ## Execution Steps
 
-1. **Check for existing `.github` configuration files** (instructions, prompts, chatmodes)
+1. **Check for ALL existing `.github` files** - Scan instructions/, prompts/, chatmodes/, workflows/, ISSUE_TEMPLATE/, and root .github/ files
 2. **Analyze the provided technology stack**
 3. **Create the directory structure** (only if directories don't exist)
-4. **Generate main copilot-instructions.md with project-wide standards** (reference existing instruction files)
-5. **Create language-specific instruction files using awesome-copilot references** (skip if existing files already cover the language)
-6. **Generate reusable prompts for common development tasks** (skip duplicates, complement existing prompts)
-7. **Set up specialized chat modes for different development scenarios** (skip duplicates, complement existing modes)
-8. **Create the GitHub Actions workflow for Coding Agent** (`copilot-setup-steps.yml`)
-8a. **Assess need for additional quality workflows** (lint/test/audit, e2e, security). Only scaffold those missing and relevant.
-9. **Validate all files follow proper formatting and include necessary frontmatter**
-10. **Report on preserved existing files and newly created files**
-11. **If requested, generate baseline PR template, issue templates, CODEOWNERS, and pre-commit hook configuration**
+4. **Generate main copilot-instructions.md with project-wide standards** (only if missing; reference existing instruction files)
+5. **Create language-specific instruction files using awesome-copilot references** (only if no equivalent exists)
+6. **Generate reusable prompts for common development tasks** (only if no equivalent exists; complement existing prompts)
+7. **Set up specialized chat modes for different development scenarios** (only if no equivalent exists; complement existing modes)
+8. **Create the GitHub Actions workflow for Coding Agent** (`copilot-setup-steps.yml` - only if missing)
+   8a. **Assess need for additional quality workflows** (lint/test/audit, e2e, security). Only scaffold those missing and relevant.
+9. **Check for PR template** (`PULL_REQUEST_TEMPLATE.md` - only create if missing)
+10. **Check for issue templates** (`ISSUE_TEMPLATE/bug_report.md`, `feature_request.md`, `chore_request.md` - only create missing ones)
+11. **Check for CODEOWNERS** (only create if missing and team size > solo)
+12. **Validate all files follow proper formatting and include necessary frontmatter**
+13. **Report on preserved existing files and newly created files**
+14. **If observability is desired and the stack has a supported Sentry SDK, add `observability-sentry.instructions.md` (only if missing) and link required env keys in docs; otherwise skip and note in the preservation report**
 
 ## Post-Setup Instructions
 
@@ -458,7 +504,7 @@ Before completing, verify:
 - [ ] **Preservation report includes all existing files**
 - [ ] PR template added or confirmed (no duplication)
 - [ ] CODEOWNERS present or rationale for omission documented
-- [ ] Issue templates (bug, feature) added if team size > solo
+- [ ] Issue templates (bug, feature, chore) added only if missing and team size > solo
 - [ ] Pre-commit hooks configured or instructions provided
 - [ ] Security scanning workflow evaluated (CodeQL or alternative)
 - [ ] E2E workflow only if Playwright dependency exists
@@ -556,25 +602,42 @@ jobs:
 ### Additional Workflow Guidance
 
 Keep separate workflows narrowly scoped:
+
 - `quality-gates.yml`: parallel jobs; each may use `needs` for aggregate status. Fail fast policy except tests may run fully (`fail-fast: false`). Cache dependencies (e.g., npm). Pin action versions.
 - `playwright-e2e.yml`: gate heavy browser installs; run only when relevant paths change using `paths` filters. Use `timeout-minutes` to avoid hanging runs.
 - `codeql-analysis.yml`: enable weekly schedule plus `push` & `pull_request` to `main`/security branches.
 - `conventional-commit-check.yml`: lightweight Node step parsing `github.event.pull_request.title`.
 
 ### PR Template Expectations
-Single `PULL_REQUEST_TEMPLATE.md` with concise checklists (security, performance, tests, docs). Keep under ~120 lines.
+
+**Create only if missing**: Check for existing `PULL_REQUEST_TEMPLATE.md` or `.github/pull_request_template.md` before creating.
+
+Single `PULL_REQUEST_TEMPLATE.md` with concise checklists (security, performance, tests, docs). Keep under ~120 lines. Generic and applicable to any project type.
 
 ### Issue Templates
-`ISSUE_TEMPLATE/bug_report.md` and `ISSUE_TEMPLATE/feature_request.md` – structured fields (steps to reproduce, expected, acceptance criteria).
+
+Generic, reusable templates applicable to any project:
+
+- `ISSUE_TEMPLATE/bug_report.md` – Defect reporting with reproduction steps and environment details
+- `ISSUE_TEMPLATE/feature_request.md` – New capability proposals with acceptance criteria
+- `ISSUE_TEMPLATE/chore_request.md` – Maintenance, refactoring, and technical debt work
+
+**Create only if missing**: Check for existing issue templates before creating. If similar templates exist (e.g., `bug.yml`, `feature.yml`), skip creation.
 
 ### CODEOWNERS Strategy
-Assign critical areas (e.g., `server/api/` to backend reviewer, `app/components/Charts/` to data viz owner). Keep patterns minimal.
+
+**Create only if missing**: Check for existing `CODEOWNERS` file before creating.
+
+Assign critical areas with generic patterns (e.g., `src/api/` to backend team, `src/components/` to frontend team). Keep patterns minimal and technology-agnostic. Only create if team size > solo.
 
 ### Pre-Commit Hooks
+
 Recommend simple tool (e.g., `simple-git-hooks` or `husky`). Minimal hooks:
+
 - `lint-staged` for staged `.ts,.vue` (eslint --max-warnings=0)
 - Optional `typecheck` via `tsc -p tsconfig.json --noEmit` (only for larger changes; may move to pre-push).
-Document how to bypass (`git commit --no-verify`) sparingly.
+  Document how to bypass (`git commit --no-verify`) sparingly.
 
 ### Enforcement Philosophy
+
 Introduce guardrails gradually; start non-blocking (annotations) then escalate to blocking once stable.
